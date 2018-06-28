@@ -4,7 +4,7 @@
 # as the count matrix and GRanges from the original object are unchanged
 
 DESeqParallel <- function(object, test, fitType, betaPrior, full, reduced,
-                          quiet, modelMatrix, useT, minmu, BPPARAM) {
+                          quiet, modelMatrix, useT, minmu, BPPARAM,maxit=100) {
 
   nworkers <- BPPARAM$workers
   idx <- factor(sort(rep(seq_len(nworkers),length.out=nrow(object))))
@@ -16,7 +16,7 @@ DESeqParallel <- function(object, test, fitType, betaPrior, full, reduced,
   if (!quiet) message(paste("gene-wise dispersion estimates:",nworkers,"workers"))
 
   object <- do.call(rbind, bplapply(levels(idx), function(l) {
-    estimateDispersionsGeneEst(object[idx == l,], quiet=TRUE, modelMatrix=modelMatrix, minmu=minmu)
+    estimateDispersionsGeneEst(object[idx == l,], quiet=TRUE, modelMatrix=modelMatrix, minmu=minmu,maxit=maxit)
   }, BPPARAM=BPPARAM))
 
   # the dispersion fit and dispersion prior are estimated over all rows
@@ -30,8 +30,8 @@ DESeqParallel <- function(object, test, fitType, betaPrior, full, reduced,
     if (!quiet) message(paste("final dispersion estimates, MLE betas:",nworkers,"workers"))
     object <- do.call(rbind, bplapply(levels(idx), function(l) {
       objectSub <- estimateDispersionsMAP(object[idx == l,],
-                                          dispPriorVar=dispPriorVar, quiet=TRUE)
-      estimateMLEForBetaPriorVar(objectSub)
+                                          dispPriorVar=dispPriorVar, quiet=TRUE,maxit=maxit)
+      estimateMLEForBetaPriorVar(objectSub,maxit=maxit)
     }, BPPARAM=BPPARAM))
     # the beta prior is estimated over all rows
     betaPriorVar <- estimateBetaPriorVar(object)
@@ -50,16 +50,16 @@ DESeqParallel <- function(object, test, fitType, betaPrior, full, reduced,
     if (test == "Wald") {
       object <- do.call(rbind, bplapply(levels(idx), function(l) {
         objectSub <- estimateDispersionsMAP(object[idx == l,],
-                                            dispPriorVar=dispPriorVar, quiet=TRUE, modelMatrix=modelMatrix)
+                                            dispPriorVar=dispPriorVar, quiet=TRUE, modelMatrix=modelMatrix,maxit=maxit)
         nbinomWaldTest(objectSub, betaPrior=FALSE,
                        quiet=TRUE, modelMatrix=modelMatrix,
-                       useT=useT, minmu=minmu)
+                       useT=useT, minmu=minmu,maxit=maxit)
       }, BPPARAM=BPPARAM))
     } else if (test == "LRT") {
       object <- do.call(rbind, bplapply(levels(idx), function(l) {
         objectSub <- estimateDispersionsMAP(object[idx == l,],
-                                            dispPriorVar=dispPriorVar, quiet=TRUE, modelMatrix=modelMatrix)
-        nbinomLRT(objectSub, full=full, reduced=reduced, quiet=TRUE, minmu=minmu)
+                                            dispPriorVar=dispPriorVar, quiet=TRUE, modelMatrix=modelMatrix,maxit=maxit)
+        nbinomLRT(objectSub, full=full, reduced=reduced, quiet=TRUE, minmu=minmu,maxit=maxit)
       }, BPPARAM=BPPARAM))
     } 
   }
