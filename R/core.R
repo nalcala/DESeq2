@@ -249,7 +249,7 @@ DESeq <- function(object, test=c("Wald","LRT"),
                   full=design(object), reduced, quiet=FALSE,
                   minReplicatesForReplace=7, modelMatrixType,
                   useT=FALSE, minmu=0.5,
-                  parallel=FALSE, BPPARAM=bpparam()) {
+                  parallel=FALSE, BPPARAM=bpparam(), maxit=100) {
   # check arguments
   stopifnot(is(object, "DESeqDataSet"))
   test <- match.arg(test, choices=c("Wald","LRT"))
@@ -337,18 +337,20 @@ DESeq <- function(object, test=c("Wald","LRT"),
   
   if (!parallel) {
     if (!quiet) message("estimating dispersions")
-    object <- estimateDispersions(object, fitType=fitType, quiet=quiet, modelMatrix=modelMatrix, minmu=minmu)
+    object <- estimateDispersions(object, fitType=fitType, quiet=quiet, modelMatrix=modelMatrix, minmu=minmu, maxit=maxit)
     if (!quiet) message("fitting model and testing")
     if (test == "Wald") {
       object <- nbinomWaldTest(object, betaPrior=betaPrior, quiet=quiet,
                                modelMatrix=modelMatrix,
                                modelMatrixType=modelMatrixType,
                                useT=useT,
-                               minmu=minmu)
+                               minmu=minmu,
+                              maxit=maxit)
     } else if (test == "LRT") {
       object <- nbinomLRT(object, full=full,
                           reduced=reduced, quiet=quiet,
-                          minmu=minmu)
+                          minmu=minmu,
+                         maxit=maxit)
     }
   } else if (parallel) {
     if (!missing(modelMatrixType)) {
