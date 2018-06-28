@@ -360,7 +360,7 @@ DESeq <- function(object, test=c("Wald","LRT"),
                             betaPrior=betaPrior, full=full, reduced=reduced,
                             quiet=quiet, modelMatrix=modelMatrix,
                             useT=useT, minmu=minmu,
-                            BPPARAM=BPPARAM)
+                            BPPARAM=BPPARAM,maxit=maxit)
   }
 
   # if there are sufficient replicates, then pass through to refitting function
